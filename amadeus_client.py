@@ -6,13 +6,23 @@ amadeus = Client(
     client_secret=AMADEUS_API_SECRET
 )
 
-def search_flights(origin, destination, departure_date, return_date=None, adults=1):
+def search_flights(
+    origin,
+    destination,
+    departure_date,
+    return_date=None,
+    adults=1,
+    children=0,
+    infants=0
+):
     try:
         params = {
             "originLocationCode": origin,
             "destinationLocationCode": destination,
             "departureDate": departure_date,
             "adults": adults,
+            "children": children,
+            "infants": infants,
             "currencyCode": "BRL"
         }
 

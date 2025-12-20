@@ -1,43 +1,83 @@
 from amadeus_client import search_flights
+#import json
 
 flights = search_flights(
     origin="OPO",
     destination="RIO",
-    departure_date="2026-03-14",
+    departure_date="2026-03-16",
     return_date="2026-04-01",
-    adults=1
+    adults=2,
+    children=0,
+    infants=1
 )
 
 if not flights:
     print("Nenhum voo encontrado.")
     exit()
 
-ALLOWED_AIRLINES = {"TP", "AD", "IB"}  # TAP Air Portugal, Azul, Iberia , 
+"""
+x = json.dumps(flights[0], indent=2)
+#agora vou salvar esse json em um arquivo para analisar melhor
+with open("flight_sample.json", "w") as f:
+    f.write(x)
+"""
+# --------------- FILTERING ---------------
+ALLOWED_AIRLINES = {"TP", "AD", "IB"}  # TAP Air Portugal, Azul, Iberia
 
-filtered_flights = [
-    f for f in flights
-    if any(code in ALLOWED_AIRLINES for code in f["validatingAirlineCodes"])
-]
+MIN_STOPS = 0  # ex: direto
+MAX_STOPS = 1  # ex: até 1 parada
 
-for i, flight in enumerate(flights[:5], start=1):
+filtered_flights = []
+
+for flight in flights:
+    if not any(a in ALLOWED_AIRLINES for a in flight["validatingAirlineCodes"]):
+        continue
+
+    itineraries = flight["itineraries"]
+    valido = True
+
+    for itinerary in itineraries:
+        stops = len(itinerary["segments"]) - 1
+        if not (MIN_STOPS <= stops <= MAX_STOPS):
+            valido = False
+            break
+
+    if valido:
+        filtered_flights.append(flight)
+# ------------------------ ----------------
+
+for i, flight in enumerate(filtered_flights[:3], start=1):
     price = flight["price"]["total"]
     currency = flight["price"]["currency"]
     airlines = flight["validatingAirlineCodes"]
 
-    itinerary = flight["itineraries"][0]
-    segments = itinerary["segments"]
-    stops = len(segments) - 1
-    duration = itinerary["duration"]
+    itineraries = flight["itineraries"]
 
     print(f"\n✈️ VOO {i}")
     print("Companhia(s):", airlines)
     print("Preço:", price, currency)
-    print("Duração:", duration)
-    print("Paradas:", stops)
 
-    for seg in segments:
-        print(
-            f"  {seg['departure']['iataCode']} → "
-            f"{seg['arrival']['iataCode']} | "
-            f"{seg['carrierCode']}{seg['number']}"
-        )
+    for idx, itinerary in enumerate(itineraries):
+        tipo = "IDA" if idx == 0 else "VOLTA"
+        segments = itinerary["segments"]
+        stops = len(segments) - 1
+        duration = itinerary["duration"]
+
+        print(f"\n  🧭 {tipo}")
+        print("  Duração:", duration)
+        print("  Paradas:", stops)
+
+        for seg in segments:
+            print(
+                f"    {seg['departure']['iataCode']} → "
+                f"{seg['arrival']['iataCode']} | "
+                f"{seg['carrierCode']}{seg['number']}"
+            )
+
+    cabin = flight["travelerPricings"][0]["fareDetailsBySegment"][0]["cabin"]
+    baggage = flight["travelerPricings"][0]["fareDetailsBySegment"][0] \
+        .get("includedCheckedBags", {}) \
+        .get("quantity", 0)
+
+    print("\n  Cabine:", cabin)
+    print("  Bagagem despachada incluída:", baggage)
