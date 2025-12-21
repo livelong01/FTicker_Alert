@@ -1,4 +1,5 @@
 from amadeus_client import search_flights
+from score import apply_score
 #import json
 
 flights = search_flights(
@@ -46,26 +47,25 @@ for flight in flights:
         filtered_flights.append(flight)
 # ------------------------ ----------------
 
-for i, flight in enumerate(filtered_flights[:3], start=1):
-    price = flight["price"]["total"]
-    currency = flight["price"]["currency"]
-    airlines = flight["validatingAirlineCodes"]
+scored_flights = apply_score(filtered_flights)
 
-    itineraries = flight["itineraries"]
+for i, item in enumerate(scored_flights[:3], start=1):
+    flight = item["flight"]
 
-    print(f"\n✈️ VOO {i}")
-    print("Companhia(s):", airlines)
-    print("Preço:", price, currency)
+    print(f"\n🥇 RANK {i}")
+    print("Score:", item["score"])
+    print("Preço:", item["price"], flight["price"]["currency"])
+    print("Paradas totais:", item["stops"])
+    print("Duração total (min):", item["duration"])
+    print("Companhia(s):", flight["validatingAirlineCodes"])
 
-    for idx, itinerary in enumerate(itineraries):
+    for idx, itinerary in enumerate(flight["itineraries"]):
         tipo = "IDA" if idx == 0 else "VOLTA"
         segments = itinerary["segments"]
-        stops = len(segments) - 1
-        duration = itinerary["duration"]
 
         print(f"\n  🧭 {tipo}")
-        print("  Duração:", duration)
-        print("  Paradas:", stops)
+        print("  Duração:", itinerary["duration"])
+        print("  Paradas:", len(segments) - 1)
 
         for seg in segments:
             print(
