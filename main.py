@@ -1,12 +1,18 @@
 from amadeus_client import search_flights
 from score import apply_score
-#import json
+from database import create_table, upsert_flight
+
+create_table()
+
+DEPARTURE_DATE = "2026-03-13"
+RETURN_DATE = "2026-04-01"
+ITINEARRY = ["OPO", "RIO"]
 
 flights = search_flights(
-    origin="OPO",
-    destination="RIO",
-    departure_date="2026-03-16",
-    return_date="2026-04-01",
+    origin=ITINEARRY[0],
+    destination=ITINEARRY[1],
+    departure_date=DEPARTURE_DATE,
+    return_date=RETURN_DATE,
     adults=2,
     children=0,
     infants=1
@@ -16,12 +22,6 @@ if not flights:
     print("Nenhum voo encontrado.")
     exit()
 
-"""
-x = json.dumps(flights[0], indent=2)
-#agora vou salvar esse json em um arquivo para analisar melhor
-with open("flight_sample.json", "w") as f:
-    f.write(x)
-"""
 # --------------- FILTERING ---------------
 ALLOWED_AIRLINES = {"TP", "AD", "IB"}  # TAP Air Portugal, Azul, Iberia
 
@@ -84,3 +84,13 @@ for i, item in enumerate(scored_flights[:10], start=1):
 
     print("\n  Cabine:", cabin)
     print("  Bagagem despachada incluída:", baggage)
+
+    upsert_flight({
+        "route": f"{ITINEARRY[0]}-{ITINEARRY[1]}",
+        "departure_date": DEPARTURE_DATE,
+        "return_date": RETURN_DATE,
+        "price_current": item["price"],
+        "airline": ",".join(flight["validatingAirlineCodes"]),
+        "stops": item["stops"],
+        "profile": item["profile"]
+    })
