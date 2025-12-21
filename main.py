@@ -47,9 +47,12 @@ for flight in flights:
         filtered_flights.append(flight)
 # ------------------------ ----------------
 
-scored_flights = apply_score(filtered_flights)
+scored_flights = apply_score(
+    filtered_flights,
+    profile_name="cheap_only"
+)
 
-for i, item in enumerate(scored_flights[:3], start=1):
+for i, item in enumerate(scored_flights[:10], start=1):
     flight = item["flight"]
 
     print(f"\n🥇 RANK {i}")
