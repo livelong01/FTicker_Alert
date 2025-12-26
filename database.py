@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+from email_alert import send_price_alert
 
 DB_NAME = "flights.db"
 
@@ -55,46 +56,31 @@ def upsert_flight(conn, data):
         old_min = row[0]
         new_min = min(old_min, data["price_current"])
 
+        # 🔔 DISPARA ALERTA SE BAIXOU
+        if data["price_current"] < old_min:
+            send_price_alert(
+                {
+                    **data,
+                    "last_seen": now
+                },
+                old_price=old_min
+            )
+
         cursor.execute("""
             UPDATE flights_history
-            SET price_current = ?, price_min = ?, last_seen = ?, stops = ?
+            SET price_current = ?, price_min = ?, last_seen = ?
             WHERE route = ?
-              AND departure_date = ?
-              AND return_date = ?
-              AND airline = ?
-              AND profile = ?
+            AND departure_date = ?
+            AND return_date = ?
+            AND airline = ?
+            AND profile = ?
         """, (
             data["price_current"],
             new_min,
             now,
-            data["stops"],
             data["route"],
             data["departure_date"],
             data["return_date"],
             data["airline"],
             data["profile"]
-        ))
-    else:
-        cursor.execute("""
-            INSERT INTO flights_history (
-                route,
-                departure_date,
-                return_date,
-                price_current,
-                price_min,
-                airline,
-                stops,
-                profile,
-                last_seen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data["route"],
-            data["departure_date"],
-            data["return_date"],
-            data["price_current"],
-            data["price_current"],
-            data["airline"],
-            data["stops"],
-            data["profile"],
-            now
         ))
