@@ -5,7 +5,7 @@ USER_PROFILES = {
         "price": 0.5,
         "stops": 0.3,
         "duration": 0.2,
-        "max_stops": 1
+        "max_stops": 2
     },
     "cheap_only": {
         "price": 0.8,
@@ -17,7 +17,7 @@ USER_PROFILES = {
         "price": 0.3,
         "stops": 0.5,
         "duration": 0.2,
-        "max_stops": 0
+        "max_stops": 1
     }
 }
 

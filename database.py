@@ -1,8 +1,8 @@
 import sqlite3
 from datetime import datetime
 
-DB_NAME = "flights.db"
 
+DB_NAME = "flights.db"
 
 def get_connection():
     return sqlite3.connect(DB_NAME)

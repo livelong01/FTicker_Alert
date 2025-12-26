@@ -1,16 +1,19 @@
 from amadeus_client import search_flights
 from score import apply_score
 from database import create_table, upsert_flight
+#import json
 
 create_table()
 
-DEPARTURE_DATE = "2026-03-13"
-RETURN_DATE = "2026-04-01"
-ITINEARRY = ["OPO", "RIO"]
+DEPARTURE_DATE = "2026-03-17"
+RETURN_DATE = "2026-06-01"
+ORIGIN = "OPO"
+DESTINATION = "RIO"
+PROFILE_NAME = "cheap_only"
 
 flights = search_flights(
-    origin=ITINEARRY[0],
-    destination=ITINEARRY[1],
+    origin=ORIGIN,
+    destination=DESTINATION,
     departure_date=DEPARTURE_DATE,
     return_date=RETURN_DATE,
     adults=2,
@@ -22,11 +25,17 @@ if not flights:
     print("Nenhum voo encontrado.")
     exit()
 
+"""
+x = json.dumps(flights[0], indent=2)
+#agora vou salvar esse json em um arquivo para analisar melhor
+with open("flight_sample.json", "w") as f:
+    f.write(x)
+"""
 # --------------- FILTERING ---------------
 ALLOWED_AIRLINES = {"TP", "AD", "IB"}  # TAP Air Portugal, Azul, Iberia
 
 MIN_STOPS = 0  # ex: direto
-MAX_STOPS = 1  # ex: até 1 parada
+MAX_STOPS = 5  # ex: até 1 parada
 
 filtered_flights = []
 
@@ -49,10 +58,10 @@ for flight in flights:
 
 scored_flights = apply_score(
     filtered_flights,
-    profile_name="cheap_only"
+    profile_name=PROFILE_NAME
 )
 
-for i, item in enumerate(scored_flights[:10], start=1):
+for i, item in enumerate(scored_flights[:3], start=1):
     flight = item["flight"]
 
     print(f"\n🥇 RANK {i}")
@@ -85,12 +94,14 @@ for i, item in enumerate(scored_flights[:10], start=1):
     print("\n  Cabine:", cabin)
     print("  Bagagem despachada incluída:", baggage)
 
+    # 🔽🔽🔽 AQUI ENTRA O SQLITE 🔽🔽🔽
     upsert_flight({
-        "route": f"{ITINEARRY[0]}-{ITINEARRY[1]}",
+        "route": ORIGIN + "-" + DESTINATION,
         "departure_date": DEPARTURE_DATE,
         "return_date": RETURN_DATE,
         "price_current": item["price"],
         "airline": ",".join(flight["validatingAirlineCodes"]),
         "stops": item["stops"],
-        "profile": item["profile"]
+        "profile": PROFILE_NAME
     })
+
