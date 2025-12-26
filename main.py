@@ -1,15 +1,14 @@
 from amadeus_client import search_flights
 from score import apply_score
-from database import create_table, upsert_flight
-#import json
+from database import get_connection, create_table, upsert_flight
 
-create_table()
+#import json
 
 DEPARTURE_DATE = "2026-03-17"
 RETURN_DATE = "2026-06-01"
 ORIGIN = "OPO"
 DESTINATION = "RIO"
-PROFILE_NAME = "cheap_only"
+PROFILE_NAME = "direct_priority"
 
 flights = search_flights(
     origin=ORIGIN,
@@ -61,6 +60,9 @@ scored_flights = apply_score(
     profile_name=PROFILE_NAME
 )
 
+conn = get_connection()
+create_table(conn)
+
 for i, item in enumerate(scored_flights[:3], start=1):
     flight = item["flight"]
 
@@ -94,8 +96,8 @@ for i, item in enumerate(scored_flights[:3], start=1):
     print("\n  Cabine:", cabin)
     print("  Bagagem despachada incluída:", baggage)
 
-    # 🔽🔽🔽 AQUI ENTRA O SQLITE 🔽🔽🔽
-    upsert_flight({
+    #  AQUI ENTRA O SQLITE 
+    upsert_flight(conn, {
         "route": ORIGIN + "-" + DESTINATION,
         "departure_date": DEPARTURE_DATE,
         "return_date": RETURN_DATE,
@@ -104,4 +106,7 @@ for i, item in enumerate(scored_flights[:3], start=1):
         "stops": item["stops"],
         "profile": PROFILE_NAME
     })
+
+conn.commit()
+conn.close()
 

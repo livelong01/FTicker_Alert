@@ -1,15 +1,16 @@
 import sqlite3
 from datetime import datetime
 
-
 DB_NAME = "flights.db"
 
+
 def get_connection():
-    return sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, timeout=15)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
 
 
-def create_table():
-    conn = get_connection()
+def create_table(conn):
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -23,24 +24,22 @@ def create_table():
             airline TEXT,
             stops INTEGER,
             profile TEXT,
-            last_seen TEXT
+            last_seen TEXT,
+            UNIQUE(route, departure_date, return_date, airline, profile)
         )
     """)
 
-    conn.commit()
-    conn.close()
 
-def upsert_flight(data):
-    conn = get_connection()
+def upsert_flight(conn, data):
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT price_min FROM flights_history
         WHERE route = ?
-        AND departure_date = ?
-        AND return_date = ?
-        AND airline = ?
-        AND profile = ?
+          AND departure_date = ?
+          AND return_date = ?
+          AND airline = ?
+          AND profile = ?
     """, (
         data["route"],
         data["departure_date"],
@@ -50,7 +49,6 @@ def upsert_flight(data):
     ))
 
     row = cursor.fetchone()
-
     now = datetime.now().isoformat(timespec="seconds")
 
     if row:
@@ -59,16 +57,17 @@ def upsert_flight(data):
 
         cursor.execute("""
             UPDATE flights_history
-            SET price_current = ?, price_min = ?, last_seen = ?
+            SET price_current = ?, price_min = ?, last_seen = ?, stops = ?
             WHERE route = ?
-            AND departure_date = ?
-            AND return_date = ?
-            AND airline = ?
-            AND profile = ?
+              AND departure_date = ?
+              AND return_date = ?
+              AND airline = ?
+              AND profile = ?
         """, (
             data["price_current"],
             new_min,
             now,
+            data["stops"],
             data["route"],
             data["departure_date"],
             data["return_date"],
@@ -99,6 +98,3 @@ def upsert_flight(data):
             data["profile"],
             now
         ))
-
-    conn.commit()
-    conn.close()
